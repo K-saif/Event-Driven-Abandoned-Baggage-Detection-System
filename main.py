@@ -16,7 +16,7 @@ def main():
         half=True
     )
 
-    cap = cv2.VideoCapture("1.mp4")
+    cap = cv2.VideoCapture("2.mp4")
 
     # Video writer setup
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -24,7 +24,7 @@ def main():
     fps = cap.get(cv2.CAP_PROP_FPS)
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    out = cv2.VideoWriter("output1.mp4", fourcc, fps, (frame_width, frame_height))
+    out = cv2.VideoWriter("output2.mp4", fourcc, fps, (frame_width, frame_height))
 
     while True:
         ret, frame = cap.read()
@@ -32,7 +32,7 @@ def main():
             break
 
         # YOLO detection (with cleaner output)
-        results = model(frame, conf=0.6, iou=0.4, classes=[0], verbose=False)
+        results = model(frame, conf=0.4, iou=0.4, classes=[0,24,26,28], verbose=False)
 
         detections = []
 
