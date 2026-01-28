@@ -10,7 +10,7 @@ onlytrack.py
 *.avi
 # C extensions
 *.so
-
+*.yaml
 # Distribution / packaging
 .Python
 build/
