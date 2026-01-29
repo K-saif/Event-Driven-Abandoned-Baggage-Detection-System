@@ -63,7 +63,7 @@ Generates a processed video showing:
 * Event alerts
 * Ownership confirmations
 
-(output.mp4)[./output.mp4]
+[▶️ Watch Demo](https://github.com/K-saif/track-person-and-belongings-/raw/main/output.mp4)
 
 ---
 
