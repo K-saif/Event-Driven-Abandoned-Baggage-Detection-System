@@ -30,6 +30,9 @@ class PersonBagTracker:
         self.person_owns = defaultdict(set)
         self.bag_owners = defaultdict(set)
 
+        self.logged_events = set()
+        self.finalized_bags = set()
+
         self.bag_release_count = defaultdict(int)
         self.bag_separation_count = defaultdict(int)
 
@@ -43,6 +46,11 @@ class PersonBagTracker:
 
     def associate(self, person_tracks, bag_tracks):
         for bid, b_box in bag_tracks.items():
+        
+            # ✅ CRITICAL LINE
+            if bid in self.finalized_bags:
+                continue   # NEVER reassign
+
             b_center = center(b_box)
             best_pid, best_dist = None, float("inf")
 
@@ -56,6 +64,10 @@ class PersonBagTracker:
 
     def confirm_ownership(self):
         for (pid, bid), count in list(self.association_count.items()):
+            
+            if bid in self.finalized_bags:
+                continue
+
             if count > self.FRAME_THRESHOLD:
                 self.person_owns[pid].add(bid)
                 self.bag_owners[bid].add(pid)
@@ -70,7 +82,10 @@ class PersonBagTracker:
 
     def check_separation(self, person_tracks, bag_tracks, frame, frame_number):
         for pid, bags in self.person_owns.items():
+
             for bid in list(bags):
+                if bid in self.finalized_bags:
+                    continue
                 if bid in bag_tracks and pid in person_tracks:
                     dist = distance(center(person_tracks[pid]), center(bag_tracks[bid]))
 
@@ -119,18 +134,55 @@ class PersonBagTracker:
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                             (0, 255, 255), 2)
 
-    def _handle_separation(self, frame, pid, bid, frame_number):
-        cv2.putText(frame, f"Person {pid} MOVED AWAY from Bag {bid}",
-                    (50, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        cv2.putText(frame, f"Bag {bid} LEFT BEHIND",
-                    (50, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+    # def _handle_separation(self, frame, pid, bid, frame_number):
+    #     cv2.putText(frame, f"Person {pid} MOVED AWAY from Bag {bid}",
+    #                 (50, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    #     cv2.putText(frame, f"Bag {bid} LEFT BEHIND",
+    #                 (50, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
 
-        log_event(frame, frame_number, "MOVED_AWAY", pid, bid, self.CSV_PATH, self.IMG_DIR)
-        log_event(frame, frame_number, "LEFT_BEHIND", pid, bid, self.CSV_PATH, self.IMG_DIR)
+    #     log_event(frame, frame_number, "MOVED_AWAY", pid, bid, self.CSV_PATH, self.IMG_DIR)
+    #     log_event(frame, frame_number, "LEFT_BEHIND", pid, bid, self.CSV_PATH, self.IMG_DIR)
+
+    # def _handle_exit(self, frame, pid, bid, frame_number):
+    #     cv2.putText(frame, f"ALERT: Person {pid} LEFT WITHOUT Bag {bid}",
+    #                 (50, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+    #     log_event(frame, frame_number, "LEFT_WITHOUT_BAG", pid, bid, self.CSV_PATH, self.IMG_DIR)
+
+
+    def _handle_separation(self, frame, pid, bid, frame_number):
+
+        moved_key = (pid, bid, "MOVED_AWAY")
+        left_key = (pid, bid, "LEFT_BEHIND")
+
+        # Log only once
+        if moved_key not in self.logged_events:
+            cv2.putText(frame, f"Person {pid} MOVED AWAY from Bag {bid}",
+                        (50, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+            log_event(frame, frame_number, "MOVED_AWAY", pid, bid, self.CSV_PATH, self.IMG_DIR)
+            self.logged_events.add(moved_key)
+
+            # ⭐ FREEZE BAG HERE
+            self.finalized_bags.add(bid)
+
+        if left_key not in self.logged_events:
+            cv2.putText(frame, f"Bag {bid} LEFT BEHIND",
+                        (50, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+
+            log_event(frame, frame_number, "LEFT_BEHIND", pid, bid, self.CSV_PATH, self.IMG_DIR)
+            self.logged_events.add(left_key)
+
 
     def _handle_exit(self, frame, pid, bid, frame_number):
+
+        exit_key = (pid, bid, "LEFT_WITHOUT_BAG")
+
+        if exit_key in self.logged_events:
+            return
+
         cv2.putText(frame, f"ALERT: Person {pid} LEFT WITHOUT Bag {bid}",
                     (50, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         log_event(frame, frame_number, "LEFT_WITHOUT_BAG", pid, bid, self.CSV_PATH, self.IMG_DIR)
-
+        self.logged_events.add(exit_key)

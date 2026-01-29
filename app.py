@@ -34,13 +34,13 @@ if not os.path.exists(CSV_PATH):
 def main():
     start_time = time.time()
 
-    model = YOLO("yolo11n.pt")
+    model = YOLO("yolo11n.pt") 
     tracker = DeepSort(max_age=30, n_init=5, embedder="mobilenet", half=True)
 
-    cap = cv2.VideoCapture("1.mp4")
+    cap = cv2.VideoCapture("1.mp4")  # Input video path
     fps = cap.get(cv2.CAP_PROP_FPS)
     W, H = int(cap.get(3)), int(cap.get(4))
-    out = cv2.VideoWriter("output2.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (W, H))
+    out = cv2.VideoWriter("output2.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (W, H))  # Save output video
 
     logic = PersonBagTracker(CSV_PATH, IMG_DIR)
     frame_number = 0
