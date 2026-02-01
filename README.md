@@ -91,7 +91,7 @@ Generates a processed video showing:
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/yourusername/person-bag-tracking.git
+git clone https://github.com/K-saif/Event-Driven-Abandoned-Baggage-Detection-System.git
 cd person-bag-tracking
 ```
 
